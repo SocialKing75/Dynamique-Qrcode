@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QRGen — Générateur de QR</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>QRGen</h1>
+    <p class="lead">Générez un QR code et partagez le lien.</p>
+
+    <form id="qr-form" class="card">
+      <label>Titre (optionnel)
+        <input type="text" name="title" placeholder="Mon lien" />
+      </label>
+      <label>URL / Contenu
+        <input type="url" name="content" placeholder="https://example.com" required />
+      </label>
+      <label class="row">
+        <input type="checkbox" name="is_dynamic" /> <span>Dynamic (modifiable après création)</span>
+      </label>
+
+      <div class="actions">
+        <button type="submit" class="btn">Générer</button>
+      </div>
+    </form>
+
+    <section id="result" class="card hidden">
+      <h2>QR code créé</h2>
+      <p>Slug: <code id="slug"></code></p>
+      <p>Redirection: <a id="redir" target="_blank"></a></p>
+      <p>Image: <img id="img" alt="QR image" /></p>
+      <div class="actions">
+        <a id="img-link" class="btn" target="_blank">Ouvrir l'image</a>
+      </div>
+    </section>
+
+    <footer>
+      <small>Backend API: <code>/api/qrcodes</code> — Redirection: <code>/q/{slug}</code> — <a href="/admin">Admin</a></small>
+    </footer>
+  </main>
+
+  <script>
+  const form = document.getElementById('qr-form');
+  const result = document.getElementById('result');
+  const slugEl = document.getElementById('slug');
+  const redirEl = document.getElementById('redir');
+  const imgEl = document.getElementById('img');
+  const imgLink = document.getElementById('img-link');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const payload = {
+      title: formData.get('title') || undefined,
+      content: formData.get('content'),
+      is_dynamic: formData.get('is_dynamic') === 'on'
+    };
+    try {
+      const res = await fetch('/api/qrcodes/', {
+        method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Erreur à la création');
+      const data = await res.json();
+      const slug = data.slug;
+      slugEl.textContent = slug;
+      redirEl.textContent = window.location.origin + '/q/' + slug;
+      redirEl.href = '/q/' + slug;
+      imgEl.src = `/api/qrcodes/${data.id}/image?size=300`;
+      imgLink.href = imgEl.src;
+      result.classList.remove('hidden');
+      result.scrollIntoView({behavior:'smooth'});
+    } catch (err) {
+      alert(err.message || 'Erreur');
+    }
+  });
+  </script>
+</body>
+</html>
