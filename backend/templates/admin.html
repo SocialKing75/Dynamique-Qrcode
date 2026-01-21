@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QRGen — Admin</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .stats { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .stat-box { background: #f8f9fa; padding: 1rem 1.5rem; border-radius: 8px; text-align: center; }
+    .stat-box .value { font-size: 2rem; font-weight: bold; color: #4361ee; }
+    .stat-box .label { font-size: 0.9rem; color: #666; }
+    .qr-card { background: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .qr-card h3 { margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .qr-card .slug { font-family: monospace; background: #e9ecef; padding: 2px 8px; border-radius: 4px; }
+    .qr-card .id { color: #999; font-size: 0.8rem; }
+    .qr-card label { display: block; margin: 0.5rem 0; }
+    .qr-card input[type="text"], .qr-card input[type="url"] { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    .qr-card .actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .qr-card .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .qr-card .btn-save { background: #4361ee; color: #fff; }
+    .qr-card .btn-delete { background: #ff6b6b; color: #fff; }
+    .qr-card .btn-view { background: #2ec4b6; color: #fff; }
+    .qr-card .btn-stats { background: #6c757d; color: #fff; }
+    .qr-card .btn:hover { opacity: 0.9; }
+    .qr-preview { width: 80px; height: 80px; float: right; margin-left: 1rem; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-dynamic { background: #d4edda; color: #155724; }
+    .badge-static { background: #f8d7da; color: #721c24; }
+    .badge-clicks { background: #cce5ff; color: #004085; margin-left: 0.5rem; }
+    .danger-zone { background: #fff5f5; border: 1px solid #ff6b6b; border-radius: 8px; padding: 1rem; margin-top: 2rem; }
+    .danger-zone h3 { color: #c92a2a; margin-top: 0; }
+    .empty { text-align: center; padding: 3rem; color: #666; }
+
+    /* Header with logout */
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+    .admin-header h1 { margin: 0; }
+    .logout-btn { background: #6c757d; color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
+    .logout-btn:hover { background: #5a6268; }
+
+    /* Search and filters */
+    .filters { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+    .filters input[type="search"] { padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; min-width: 200px; }
+    .filters select { padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; }
+
+    /* Pagination */
+    .pagination { display: flex; gap: 0.5rem; justify-content: center; margin: 1.5rem 0; align-items: center; flex-wrap: wrap; }
+    .pagination button { padding: 0.5rem 1rem; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; }
+    .pagination button:hover:not(:disabled) { background: #f8f9fa; }
+    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pagination button.active { background: #4361ee; color: #fff; border-color: #4361ee; }
+    .pagination .info { color: #666; font-size: 0.9rem; margin-right: 1rem; }
+
+    /* Modal QR large */
+    .qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+    .qr-modal.active { display: flex; }
+    .qr-modal-content { background: #fff; padding: 2rem; border-radius: 12px; text-align: center; max-width: 90%; max-height: 90%; overflow-y: auto; }
+    .qr-modal-content img { max-width: 300px; width: 100%; height: auto; }
+    .qr-modal-content h3 { margin: 1rem 0 0.5rem; }
+    .qr-modal-content p { color: #666; font-size: 0.9rem; word-break: break-all; }
+    .qr-modal-content .btn { margin-top: 1rem; }
+    .qr-preview { cursor: pointer; transition: transform 0.2s; }
+    .qr-preview:hover { transform: scale(1.1); }
+
+    /* Analytics modal */
+    .analytics-section { margin-top: 1.5rem; text-align: left; }
+    .analytics-section h4 { margin-bottom: 1rem; color: #333; }
+    .click-list { max-height: 300px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 4px; }
+    .click-item { padding: 0.75rem; border-bottom: 1px solid #e9ecef; font-size: 0.85rem; }
+    .click-item:last-child { border-bottom: none; }
+    .click-item .timestamp { font-weight: 600; color: #4361ee; }
+    .click-item .details { color: #666; margin-top: 0.25rem; }
+    .click-item .ip { font-family: monospace; background: #f8f9fa; padding: 1px 4px; border-radius: 2px; }
+    .no-clicks { padding: 2rem; text-align: center; color: #666; }
+    .click-pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+    .click-pagination button { padding: 0.25rem 0.75rem; font-size: 0.85rem; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; }
+    .click-pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Loading state */
+    .loading { text-align: center; padding: 2rem; color: #666; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <div class="admin-header">
+      <h1>Admin — Gestion des QR Codes</h1>
+      <form action="/admin/logout" method="post" style="margin: 0;">
+        <button type="submit" class="logout-btn">Déconnexion</button>
+      </form>
+    </div>
+    <p class="lead">Gérez vos QR codes : modifier, supprimer, voir les statistiques.</p>
+
+    <div class="stats">
+      <div class="stat-box">
+        <div class="value" id="statTotal">-</div>
+        <div class="label">Total QR</div>
+      </div>
+      <div class="stat-box">
+        <div class="value" id="statDynamic">-</div>
+        <div class="label">Dynamiques</div>
+      </div>
+      <div class="stat-box">
+        <div class="value" id="statClicks">-</div>
+        <div class="label">Scans</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input type="search" id="searchInput" placeholder="Rechercher (titre, slug, URL)..." />
+      <select id="filterDynamic">
+        <option value="">Tous les types</option>
+        <option value="true">Dynamiques</option>
+        <option value="false">Statiques</option>
+      </select>
+      <select id="sortSelect">
+        <option value="created_desc">Plus récents</option>
+        <option value="created_asc">Plus anciens</option>
+        <option value="title_asc">Titre A-Z</option>
+        <option value="title_desc">Titre Z-A</option>
+      </select>
+    </div>
+
+    <div id="list"><div class="loading">Chargement...</div></div>
+
+    <div class="pagination" id="pagination"></div>
+
+    <div class="danger-zone">
+      <h3>Zone de danger</h3>
+      <p>Supprimer tous les QR codes et leurs statistiques. Cette action est irréversible.</p>
+      <button class="btn btn-delete" id="deleteAllBtn">Supprimer TOUS les QR codes</button>
+    </div>
+
+    <footer style="margin-top: 2rem;">
+      <small><a href="/">Retour au site</a></small>
+    </footer>
+  </main>
+
+  <!-- Modal pour afficher le QR code en grand -->
+  <div class="qr-modal" id="qrModal">
+    <div class="qr-modal-content">
+      <img id="qrModalImage" src="" alt="QR Code" />
+      <h3 id="qrModalTitle"></h3>
+      <p id="qrModalUrl"></p>
+      <a id="qrModalDownload" class="btn btn-save" download="qrcode.png">Télécharger</a>
+      <button class="btn" id="closeModalBtn" style="margin-left: 0.5rem;">Fermer</button>
+
+      <div class="analytics-section" id="analyticsSection">
+        <h4>Historique des scans</h4>
+        <div id="clickList" class="click-list"></div>
+        <div class="click-pagination" id="clickPagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // State
+    let currentPage = 1;
+    let currentSearch = '';
+    let currentDynamic = '';
+    let currentSort = 'created_desc';
+    let totalPages = 1;
+    let currentModalQrId = null;
+
+    // DOM elements
+    const listContainer = document.getElementById('list');
+    const paginationContainer = document.getElementById('pagination');
+    const searchInput = document.getElementById('searchInput');
+    const filterDynamic = document.getElementById('filterDynamic');
+    const sortSelect = document.getElementById('sortSelect');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const qrModal = document.getElementById('qrModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+
+    // Load stats
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        if (res.ok) {
+          const stats = await res.json();
+          document.getElementById('statTotal').textContent = stats.total_qr || 0;
+          document.getElementById('statDynamic').textContent = stats.dynamic_qr || 0;
+          document.getElementById('statClicks').textContent = stats.total_clicks || 0;
+        }
+      } catch (e) {
+        console.error('Stats error:', e);
+      }
+    }
+
+    // Build query string
+    function buildQuery() {
+      const params = new URLSearchParams();
+      params.set('page', currentPage);
+      params.set('limit', '20');
+      params.set('sort', currentSort);
+      if (currentSearch) params.set('search', currentSearch);
+      if (currentDynamic) params.set('dynamic', currentDynamic);
+      return params.toString();
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Load all QR codes
+    async function fetchList() {
+      const queryString = buildQuery();
+      console.log('Fetching with query:', queryString);
+
+      listContainer.innerHTML = '<div class="loading">Chargement...</div>';
+
+      try {
+        const res = await fetch('/api/qrcodes/?' + queryString);
+        const data = await res.json();
+        console.log('API response:', data);
+
+        // Handle both old and new API format
+        const items = data.items || data;
+        totalPages = data.pages || 1;
+        const total = data.total || items.length;
+
+        listContainer.innerHTML = '';
+
+        if (!items || !items.length) {
+          listContainer.innerHTML = '<div class="empty">Aucun QR code trouvé. <a href="/">Créez-en un !</a></div>';
+          renderPagination(0);
+          return;
+        }
+
+        items.forEach(q => {
+          const el = document.createElement('div');
+          el.className = 'qr-card';
+          el.dataset.id = q.id;
+          const badgeClass = q.is_dynamic ? 'badge-dynamic' : 'badge-static';
+          const badgeText = q.is_dynamic ? 'Dynamique' : 'Statique';
+          const clickCount = q.click_count || 0;
+          const safeTitle = escapeHtml(q.title || q.slug);
+          const safeContent = escapeHtml(q.content || '');
+
+          el.innerHTML = `
+            <img src="/api/qrcodes/${q.id}/image?size=80" class="qr-preview" alt="QR Code" data-id="${q.id}" data-slug="${q.slug}" data-title="${safeTitle}" title="Cliquez pour agrandir" />
+            <h3>
+              <span class="slug">${escapeHtml(q.slug)}</span>
+              <span class="id">#${q.id}</span>
+              <span class="badge ${badgeClass}">${badgeText}</span>
+              <span class="badge badge-clicks">${clickCount} scan${clickCount !== 1 ? 's' : ''}</span>
+            </h3>
+            <label>Titre
+              <input type="text" name="title" value="${safeTitle}" placeholder="Titre du QR code" />
+            </label>
+            <label>Lien de redirection
+              <input type="url" name="content" value="${safeContent}" placeholder="https://example.com" />
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" name="is_dynamic" ${q.is_dynamic ? 'checked' : ''} />
+              Dynamique (modifiable)
+            </label>
+            <div class="actions">
+              <button class="btn btn-save">Enregistrer</button>
+              <a class="btn btn-view" href="/q/${q.slug}" target="_blank">Tester le lien</a>
+              <button class="btn btn-stats" data-id="${q.id}" data-slug="${q.slug}" data-title="${safeTitle}">Statistiques</button>
+              <button class="btn btn-delete">Supprimer</button>
+            </div>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+              URL de scan: <code>${window.location.origin}/q/${q.slug}</code>
+            </p>
+          `;
+          listContainer.appendChild(el);
+        });
+
+        // Attach event listeners to cards
+        attachCardListeners();
+        renderPagination(total);
+
+      } catch (e) {
+        console.error('Fetch error:', e);
+        listContainer.innerHTML = '<div class="empty">Erreur lors du chargement. <a href="javascript:location.reload()">Réessayer</a></div>';
+      }
+    }
+
+    // Attach event listeners to QR cards
+    function attachCardListeners() {
+      // QR preview click
+      document.querySelectorAll('.qr-preview').forEach(img => {
+        img.addEventListener('click', function() {
+          const id = this.dataset.id;
+          const slug = this.dataset.slug;
+          const title = this.dataset.title;
+          showQrModal(id, slug, title);
+        });
+      });
+
+      // Stats button click
+      document.querySelectorAll('.btn-stats').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const id = this.dataset.id;
+          const slug = this.dataset.slug;
+          const title = this.dataset.title;
+          showQrModal(id, slug, title);
+        });
+      });
+
+      // Save button click
+      document.querySelectorAll('.btn-save').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const card = this.closest('.qr-card');
+          const id = card.dataset.id;
+          const title = card.querySelector('input[name=title]').value;
+          const content = card.querySelector('input[name=content]').value;
+          const is_dynamic = card.querySelector('input[name=is_dynamic]').checked;
+
+          try {
+            const r = await fetch(`/api/qrcodes/${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title, content, is_dynamic })
+            });
+
+            if (!r.ok) {
+              const err = await r.json();
+              alert('Erreur: ' + (err.detail || 'Impossible de sauvegarder'));
+              return;
+            }
+
+            alert('Sauvegardé !');
+            fetchList();
+            loadStats();
+          } catch (e) {
+            alert('Erreur réseau');
+          }
+        });
+      });
+
+      // Delete button click
+      document.querySelectorAll('.qr-card .btn-delete').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const card = this.closest('.qr-card');
+          const id = card.dataset.id;
+          if (!confirm('Supprimer ce QR code ?')) return;
+
+          try {
+            const r = await fetch(`/api/qrcodes/${id}`, { method: 'DELETE' });
+            if (!r.ok) {
+              alert('Erreur de suppression');
+              return;
+            }
+            fetchList();
+            loadStats();
+          } catch (e) {
+            alert('Erreur réseau');
+          }
+        });
+      });
+    }
+
+    // Render pagination
+    function renderPagination(total) {
+      if (totalPages <= 1) {
+        paginationContainer.innerHTML = `<span class="info">${total} QR code${total !== 1 ? 's' : ''}</span>`;
+        return;
+      }
+
+      let html = `<span class="info">${total} QR codes — Page ${currentPage}/${totalPages}</span>`;
+      html += `<button data-page="1" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
+      html += `<button data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Précédent</button>`;
+
+      // Page numbers
+      const start = Math.max(1, currentPage - 2);
+      const end = Math.min(totalPages, currentPage + 2);
+      for (let i = start; i <= end; i++) {
+        html += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+      }
+
+      html += `<button data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Suivant</button>`;
+      html += `<button data-page="${totalPages}" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>`;
+
+      paginationContainer.innerHTML = html;
+
+      // Attach pagination click handlers
+      paginationContainer.querySelectorAll('button[data-page]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const page = parseInt(this.dataset.page, 10);
+          if (page >= 1 && page <= totalPages && page !== currentPage) {
+            currentPage = page;
+            fetchList();
+          }
+        });
+      });
+    }
+
+    // Delete all QR codes
+    async function deleteAll() {
+      if (!confirm('ATTENTION: Supprimer TOUS les QR codes ?')) return;
+      if (!confirm('Dernière chance ! Cette action est irréversible.')) return;
+
+      try {
+        const r = await fetch('/api/qrcodes/', { method: 'DELETE' });
+        if (!r.ok) {
+          alert('Erreur de suppression');
+          return;
+        }
+        const data = await r.json();
+        alert(data.message);
+        fetchList();
+        loadStats();
+      } catch (e) {
+        alert('Erreur réseau');
+      }
+    }
+
+    // Show QR modal
+    async function showQrModal(id, slug, title) {
+      currentModalQrId = id;
+
+      document.getElementById('qrModalImage').src = `/api/qrcodes/${id}/image?size=300`;
+      document.getElementById('qrModalTitle').textContent = title;
+      document.getElementById('qrModalUrl').textContent = `${window.location.origin}/q/${slug}`;
+      document.getElementById('qrModalDownload').href = `/api/qrcodes/${id}/image?size=500`;
+      document.getElementById('qrModalDownload').download = `qrcode-${slug}.png`;
+
+      qrModal.classList.add('active');
+      await loadClickHistory(id, 1);
+    }
+
+    // Load click history
+    async function loadClickHistory(qrId, page) {
+      const clickList = document.getElementById('clickList');
+      const pagination = document.getElementById('clickPagination');
+
+      clickList.innerHTML = '<div class="no-clicks">Chargement...</div>';
+
+      try {
+        const res = await fetch(`/api/qrcodes/${qrId}/clicks?page=${page}&limit=10`);
+        const data = await res.json();
+
+        if (!data.clicks || data.clicks.length === 0) {
+          clickList.innerHTML = '<div class="no-clicks">Aucun scan enregistré pour ce QR code.</div>';
+          pagination.innerHTML = '';
+          return;
+        }
+
+        clickList.innerHTML = data.clicks.map(click => {
+          const date = click.timestamp ? new Date(click.timestamp) : null;
+          const formattedDate = date ? date.toLocaleString('fr-FR') : 'Date inconnue';
+          const ua = click.user_agent || 'Inconnu';
+          const shortUa = ua.length > 50 ? ua.substring(0, 50) + '...' : ua;
+
+          return `
+            <div class="click-item">
+              <div class="timestamp">${formattedDate}</div>
+              <div class="details">
+                IP: <span class="ip">${click.ip || 'Inconnue'}</span>
+                ${click.country ? ` — ${click.country}` : ''}
+              </div>
+              <div class="details" title="${escapeHtml(ua)}">Navigateur: ${escapeHtml(shortUa)}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Pagination for clicks
+        if (data.pages > 1) {
+          pagination.innerHTML = `
+            <button ${page === 1 ? 'disabled' : ''} data-click-page="${page - 1}">←</button>
+            <span class="info">${page}/${data.pages}</span>
+            <button ${page === data.pages ? 'disabled' : ''} data-click-page="${page + 1}">→</button>
+          `;
+          pagination.querySelectorAll('button[data-click-page]').forEach(btn => {
+            btn.addEventListener('click', function() {
+              loadClickHistory(qrId, parseInt(this.dataset.clickPage, 10));
+            });
+          });
+        } else {
+          pagination.innerHTML = '';
+        }
+      } catch (e) {
+        console.error('Error loading clicks:', e);
+        clickList.innerHTML = '<div class="no-clicks">Erreur lors du chargement des scans.</div>';
+        pagination.innerHTML = '';
+      }
+    }
+
+    // Close modal
+    function closeQrModal() {
+      qrModal.classList.remove('active');
+      currentModalQrId = null;
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', debounce(function(e) {
+      currentSearch = e.target.value.trim();
+      currentPage = 1;
+      console.log('Search changed:', currentSearch);
+      fetchList();
+    }, 300));
+
+    filterDynamic.addEventListener('change', function(e) {
+      currentDynamic = e.target.value;
+      currentPage = 1;
+      console.log('Filter changed:', currentDynamic);
+      fetchList();
+    });
+
+    sortSelect.addEventListener('change', function(e) {
+      currentSort = e.target.value;
+      currentPage = 1;
+      console.log('Sort changed:', currentSort);
+      fetchList();
+    });
+
+    deleteAllBtn.addEventListener('click', deleteAll);
+
+    closeModalBtn.addEventListener('click', closeQrModal);
+
+    qrModal.addEventListener('click', function(e) {
+      if (e.target === qrModal) closeQrModal();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeQrModal();
+    });
+
+    // Debounce helper
+    function debounce(fn, delay) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    // Init
+    console.log('Admin panel initialized');
+    loadStats();
+    fetchList();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+SQLAlchemy==1.4.49
+python-jose==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0
+segno==1.6.1
+Pillow==10.0.1
+email-validator==2.0.0
+Jinja2==3.1.2
+python-multipart==0.0.6
+psycopg2-binary==2.9.9
