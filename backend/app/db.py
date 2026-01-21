@@ -3,8 +3,9 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Load .env file
-load_dotenv()
+# Only load .env file in local development (not on Vercel)
+if not os.getenv("VERCEL"):
+    load_dotenv()
 
 Base = declarative_base()
 
@@ -19,11 +20,15 @@ def get_engine():
     global _engine
     if _engine is not None:
         return _engine
-    
-    DATABASE_URL = os.getenv("DATABASE_URL")
-    
+
+    # Get DATABASE_URL and strip any whitespace
+    DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+    # Check if we're on Vercel
+    is_vercel = os.getenv("VERCEL") or os.getenv("VERCEL_ENV")
+
     if not DATABASE_URL:
-        if os.getenv("VERCEL"):
+        if is_vercel:
             # On Vercel, PostgreSQL is required
             raise ValueError("DATABASE_URL is missing on Vercel. Please set it in the Vercel project settings.")
         # For local development, use SQLite
