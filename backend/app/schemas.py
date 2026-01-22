@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional, Any, Dict
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from typing import Optional, Any, Dict, Annotated
 from datetime import datetime
 from urllib.parse import urlparse
+from bson import ObjectId
 
 # Blocked URL schemes that could be used for phishing or attacks
 BLOCKED_SCHEMES = {'javascript', 'data', 'vbscript', 'file'}
@@ -49,34 +50,41 @@ class UserCreate(BaseModel):
 
 
 class UserOut(BaseModel):
-    id: int
+    id: str
     email: EmailStr
     is_active: bool
     is_verified: bool
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def convert_objectid(cls, v):
+        if isinstance(v, ObjectId):
+            return str(v)
+        return str(v) if v else v
 
 
 class QRCreate(BaseModel):
-    title: Optional[str]
+    title: Optional[str] = None
     content: str
     is_dynamic: Optional[bool] = False
-    # Use default_factory to avoid mutable default shared between instances
     options: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
-    @validator('content')
+    @field_validator('content')
+    @classmethod
     def validate_content(cls, v):
         return validate_url_safety(v)
 
 
 class QRUpdate(BaseModel):
-    title: Optional[str]
-    content: Optional[str]
-    is_dynamic: Optional[bool]
-    options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    title: Optional[str] = None
+    content: Optional[str] = None
+    is_dynamic: Optional[bool] = None
+    options: Optional[Dict[str, Any]] = None
 
-    @validator('content')
+    @field_validator('content')
+    @classmethod
     def validate_content(cls, v):
         if v is not None:
             return validate_url_safety(v)
@@ -84,13 +92,20 @@ class QRUpdate(BaseModel):
 
 
 class QROut(BaseModel):
-    id: int
+    id: str
     slug: str
-    title: Optional[str]
+    title: Optional[str] = None
     content: str
     is_dynamic: bool
     options: Dict[str, Any]
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def convert_objectid(cls, v):
+        if isinstance(v, ObjectId):
+            return str(v)
+        return str(v) if v else v

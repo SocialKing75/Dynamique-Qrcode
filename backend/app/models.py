@@ -1,42 +1,44 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON, ForeignKey
-from sqlalchemy.orm import relationship
+from beanie import Document, Indexed, PydanticObjectId
+from pydantic import Field, EmailStr
+from typing import Optional, Dict, Any
 from datetime import datetime
-from .db import Base
 
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=False)
-    is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+class User(Document):
+    email: Indexed(EmailStr, unique=True)
+    hashed_password: str
+    is_active: bool = False
+    is_verified: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "users"
 
 
-class QRCode(Base):
-    __tablename__ = "qrcodes"
-    id = Column(Integer, primary_key=True, index=True)
-    slug = Column(String, unique=True, index=True, nullable=False)
-    title = Column(String, default="")
-    content = Column(Text, nullable=False)
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    is_dynamic = Column(Boolean, default=False)
-    # Use a callable default to avoid sharing a mutable dict across instances
-    options = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+class QRCode(Document):
+    slug: Indexed(str, unique=True)
+    title: str = ""
+    content: str
+    owner_id: Optional[PydanticObjectId] = None
+    is_dynamic: bool = False
+    options: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    owner = relationship("User")
+    class Settings:
+        name = "qrcodes"
 
 
-class Click(Base):
-    __tablename__ = "clicks"
-    id = Column(Integer, primary_key=True, index=True)
-    qrcode_id = Column(Integer, ForeignKey("qrcodes.id"))
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    ip = Column(String, nullable=True)
-    user_agent = Column(String, nullable=True)
-    country = Column(String, nullable=True)
+class Click(Document):
+    qrcode_id: PydanticObjectId
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    ip: Optional[str] = None
+    user_agent: Optional[str] = None
+    country: Optional[str] = None
 
-    qrcode = relationship("QRCode")
+    class Settings:
+        name = "clicks"
+        indexes = [
+            "qrcode_id",
+            "timestamp",
+        ]
