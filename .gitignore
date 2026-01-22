@@ -1,14 +1,39 @@
+# Vercel
 .vercel
+
+# Environment variables
 .env
 .env*.local
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
+
+# Database files
 *.db
 *.sqlite
 *.sqlite3
+
+# Virtual environments
 .venv/
 venv/
 env/
+backend/.venv/
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
