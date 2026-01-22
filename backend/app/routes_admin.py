@@ -1,30 +1,24 @@
-from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse
 import os
 from datetime import timedelta
-from . import auth
-from .db import get_db
-from . import models
-from sqlalchemy.orm import Session
+from . import auth, models
 
 router = APIRouter()
 
 
 @router.get("/admin/login")
-def login_form(request: Request):
-    # Serve login template
+async def login_form(request: Request):
     from fastapi.templating import Jinja2Templates
-    import os
     templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), '..', 'templates'))
     return templates.TemplateResponse("admin_login.html", {"request": request})
 
 
 @router.post("/admin/login")
-def login(request: Request, password: str = Form(None)):
-    # Accept form submission; also allow JSON body
+async def login(request: Request, password: str = Form(None)):
     if password is None:
         try:
-            data = request.json()
+            data = await request.json()
             password = data.get('password')
         except Exception:
             password = None
@@ -41,17 +35,17 @@ def login(request: Request, password: str = Form(None)):
 
 
 @router.post('/admin/logout')
-def logout():
+async def logout():
     resp = RedirectResponse(url='/', status_code=302)
     resp.delete_cookie('admin_token')
     return resp
 
 
 @router.get('/api/admin/stats')
-def api_admin_stats(request: Request, db: Session = Depends(get_db)):
+async def api_admin_stats(request: Request):
     """Compatibility endpoint for admin stats at /api/admin/stats"""
     auth.require_admin_from_request(request)
-    total_qr = db.query(models.QRCode).count()
-    dynamic_qr = db.query(models.QRCode).filter(models.QRCode.is_dynamic.is_(True)).count()
-    total_clicks = db.query(models.Click).count()
+    total_qr = await models.QRCode.find().count()
+    dynamic_qr = await models.QRCode.find(models.QRCode.is_dynamic == True).count()
+    total_clicks = await models.Click.find().count()
     return {"total_qr": total_qr, "dynamic_qr": dynamic_qr, "total_clicks": total_clicks}

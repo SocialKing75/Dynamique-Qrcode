@@ -1,4 +1,6 @@
-#!/home/name/Téléchargements/webgestion/2qrgen/backend/.venv/bin/python3
+#!/bin/sh
+'''exec' "/home/name/Musique/A- QRCODE DYNAMIQUE/backend/.venv/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys
