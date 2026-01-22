@@ -1,0 +1,46 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+backend/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Database files (not needed on serverless)
+*.db
+*.sqlite
+*.sqlite3
+
+# Development files
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.env.local
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.github/
+
+# Tests
+tests/
+**/tests/
+
+# Documentation
+*.md
+!README.md
+
+# Node modules (if any)
+node_modules/
