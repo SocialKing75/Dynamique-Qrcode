@@ -16,8 +16,8 @@ Plateforme de génération et gestion de QR Codes avec FastAPI.
 | Composant | Technologie |
 |-----------|-------------|
 | Backend | FastAPI 0.95.2, Uvicorn |
-| ORM | SQLAlchemy 1.4.49 |
-| Base de données | SQLite (dev) / PostgreSQL (prod) |
+| ODM | Beanie 1.25.0 (Motor) |
+| Base de données | MongoDB |
 | Auth | JWT (python-jose), bcrypt (passlib) |
 | QR Codes | segno, Pillow |
 | Frontend | HTML5, CSS3, JavaScript vanilla |
@@ -72,7 +72,8 @@ uvicorn app.main:app --reload --port 8000
 |----------|-------------|
 | `SECRET_KEY` | Clé de signature JWT (32+ caractères) |
 | `ADMIN_PASSWORD` | Mot de passe admin |
-| `DATABASE_URL` | URL de connexion (optionnel en dev, SQLite par défaut) |
+| `MONGODB_URL` | URL MongoDB (défaut: mongodb://localhost:27017) |
+| `MONGODB_DB_NAME` | Nom de la base de données (défaut: qrgen) |
 
 ### Optionnelles
 
@@ -157,27 +158,32 @@ vercel
 ```
 
 Variables requises sur Vercel :
-- `DATABASE_URL` (PostgreSQL)
+- `MONGODB_URL` (MongoDB Atlas ou autre)
+- `MONGODB_DB_NAME`
 - `SECRET_KEY`
 - `ADMIN_PASSWORD`
 
-## Modèles de données
+## Modèles de données (MongoDB)
 
 ### QRCode
 
 | Champ | Type | Description |
 |-------|------|-------------|
-| slug | string | Identifiant unique |
+| _id | ObjectId | Identifiant unique MongoDB |
+| slug | string | Slug unique pour redirection |
 | title | string | Titre du QR |
 | content | string | URL ou données |
 | is_dynamic | boolean | Modifiable après création |
-| options | JSON | Couleurs, logo |
+| options | object | Couleurs, logo |
+| created_at | datetime | Date de création |
+| updated_at | datetime | Dernière modification |
 
 ### Click (Analytics)
 
 | Champ | Type | Description |
 |-------|------|-------------|
-| qr_id | FK | Référence QR code |
+| _id | ObjectId | Identifiant unique MongoDB |
+| qrcode_id | ObjectId | Référence QR code |
 | timestamp | datetime | Date/heure du scan |
 | ip | string | Adresse IP |
 | user_agent | string | Navigateur |
@@ -186,6 +192,3 @@ Variables requises sur Vercel :
 ## Licence
 
 MIT
-# Dynamique-Qrcode
-# Dynamique-Qrcode
-# Dynamique-Qrcode
