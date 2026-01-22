@@ -1,2 +1,14 @@
 .vercel
+.env
 .env*.local
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.db
+*.sqlite
+*.sqlite3
+.venv/
+venv/
+env/

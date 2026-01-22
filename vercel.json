@@ -6,10 +6,6 @@
   },
   "rewrites": [
     {
-      "source": "/static/(.*)",
-      "destination": "/backend/static/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/api/index.py"
     }
