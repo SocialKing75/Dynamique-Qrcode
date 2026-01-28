@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/automation", tags=["automation"])
 dbx_client = DropboxClient()
 logger = logging.getLogger(__name__)
 
-VERSION = "2026-01-28-1800"
+VERSION = "2026-01-28-1830"
 
 # =============================================================================
 # DROPBOX WEBHOOK - Détection en temps réel
@@ -121,14 +121,23 @@ async def process_dropbox_changes(base_url: str) -> dict:
             except Exception as e:
                 logger.error(f"❌ Error processing {entry.name}: {e}")
                 result["errors"].append({"filename": entry.name, "error": str(e)})
-                # Enregistrer l'erreur
-                await models.ProcessedFile(
-                    dropbox_path=entry.path_lower,
-                    filename=entry.name,
-                    content_hash=entry.content_hash,
-                    status="error",
-                    error_message=str(e)
-                ).insert()
+                # Enregistrer ou mettre à jour l'erreur
+                existing_error = await models.ProcessedFile.find_one(
+                    models.ProcessedFile.dropbox_path == entry.path_lower
+                )
+                if existing_error:
+                    existing_error.status = "error"
+                    existing_error.error_message = str(e)
+                    existing_error.content_hash = entry.content_hash
+                    await existing_error.save()
+                else:
+                    await models.ProcessedFile(
+                        dropbox_path=entry.path_lower,
+                        filename=entry.name,
+                        content_hash=entry.content_hash,
+                        status="error",
+                        error_message=str(e)
+                    ).insert()
 
         logger.info(f"Webhook processing complete: {len(result['processed'])} files processed")
         return result
@@ -385,14 +394,24 @@ async def _process_single_file(entry, base_url: str) -> dict:
         finalized_path = f"{final_dir}/finalized/{entry.name}"
         dbx_client.upload_file(output_path, finalized_path)
 
-        # Record as processed
-        await models.ProcessedFile(
-            dropbox_path=entry.path_lower,
-            filename=entry.name,
-            content_hash=entry.content_hash,
-            qrcode_id=q.id,
-            status="success"
-        ).insert()
+        # Record as processed (upsert to handle re-processing)
+        existing = await models.ProcessedFile.find_one(
+            models.ProcessedFile.dropbox_path == entry.path_lower
+        )
+        if existing:
+            existing.content_hash = entry.content_hash
+            existing.qrcode_id = q.id
+            existing.status = "success"
+            existing.error_message = None
+            await existing.save()
+        else:
+            await models.ProcessedFile(
+                dropbox_path=entry.path_lower,
+                filename=entry.name,
+                content_hash=entry.content_hash,
+                qrcode_id=q.id,
+                status="success"
+            ).insert()
 
         return {
             "filename": entry.name,
