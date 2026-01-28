@@ -62,7 +62,7 @@ async def dropbox_webhook_notification(request: Request):
     logger.info(f"Dropbox webhook notification received: {data}")
 
     # Traiter les changements immédiatement (Vercel serverless ne supporte pas bien les background tasks)
-    base_url = os.getenv("BASE_URL") or str(request.base_url).rstrip('/')
+    base_url = (os.getenv("BASE_URL") or str(request.base_url)).rstrip('/')
 
     result = await process_dropbox_changes(base_url)
 
@@ -288,7 +288,7 @@ async def watch_folder(request: Request):
         raise HTTPException(status_code=500, detail="Dropbox not configured")
 
     # Priorité à BASE_URL (important pour le cron Vercel)
-    base_url = os.getenv("BASE_URL") or str(request.base_url).rstrip('/')
+    base_url = (os.getenv("BASE_URL") or str(request.base_url)).rstrip('/')
     results = {"processed": [], "skipped": [], "errors": []}
 
     try:
