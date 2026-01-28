@@ -12,6 +12,7 @@
     <p class="lead">Générez un QR code et partagez le lien.</p>
 
     <form id="qr-form" class="card">
+      <h2>Générateur simple</h2>
       <label>Titre (optionnel)
         <input type="text" name="title" placeholder="Mon lien" />
       </label>
@@ -26,6 +27,20 @@
         <button type="submit" class="btn">Générer</button>
       </div>
     </form>
+
+    <div class="card" id="dropbox-integration">
+      <h2>Intégration PDF Dropbox</h2>
+      <p>Entrez le nom du fichier PDF déjà présent dans votre dossier Dropbox.</p>
+      <form id="automation-form">
+        <label>Nom du fichier PDF
+          <input type="text" id="pdf-filename" placeholder="mon-document.pdf" required />
+        </label>
+        <div class="actions">
+          <button type="submit" id="btn-automation" class="btn secondary">Générer et insérer QR code</button>
+        </div>
+      </form>
+      <div id="automation-status" class="hidden status-msg"></div>
+    </div>
 
     <section id="result" class="card hidden">
       <h2>QR code créé</h2>
@@ -42,7 +57,14 @@
     </footer>
   </main>
 
+  <style>
+    .secondary { background-color: #4A90E2; }
+    .status-msg { margin-top: 1rem; padding: 0.5rem; border-radius: 4px; background: #f0f0f0; }
+    .hidden { display: none; }
+  </style>
+
   <script>
+  // Simple QR generation
   const form = document.getElementById('qr-form');
   const result = document.getElementById('result');
   const slugEl = document.getElementById('slug');
@@ -74,6 +96,44 @@
       result.scrollIntoView({behavior:'smooth'});
     } catch (err) {
       alert(err.message || 'Erreur');
+    }
+  });
+
+  // Dropbox Automation
+  const automationForm = document.getElementById('automation-form');
+  const btnAutomation = document.getElementById('btn-automation');
+  const statusEl = document.getElementById('automation-status');
+
+  automationForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const filename = document.getElementById('pdf-filename').value;
+    
+    btnAutomation.disabled = true;
+    btnAutomation.textContent = "Traitement en cours...";
+    statusEl.textContent = "Recherche et modification du PDF...";
+    statusEl.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/automation/manual-process', {
+        method: 'POST',
+        headers: {'content-type':'application/json'},
+        body: JSON.stringify({ filename })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erreur lors du traitement');
+
+      statusEl.textContent = "Succès ! Le téléchargement va commencer.";
+      
+      // Trigger automatic download
+      window.location.href = data.download_url;
+      
+    } catch (err) {
+      statusEl.textContent = "Erreur: " + err.message;
+      statusEl.style.color = "red";
+    } finally {
+      btnAutomation.disabled = false;
+      btnAutomation.textContent = "Générer et insérer QR code";
     }
   });
   </script>

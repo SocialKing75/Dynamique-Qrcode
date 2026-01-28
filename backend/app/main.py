@@ -7,7 +7,7 @@ from .routes_auth import router as auth_router
 from .routes_qr import router as qr_router
 from .qrcode_redirect import router as redirect_router
 from .routes_admin import router as admin_router
-from .routes_webhooks import router as webhooks_router
+from .routes_automation import router as automation_router
 from .auth import require_admin_from_request
 from .db import init_db, close_db
 import os
@@ -39,7 +39,7 @@ app.include_router(auth_router)
 app.include_router(qr_router)
 app.include_router(redirect_router)
 app.include_router(admin_router)
-app.include_router(webhooks_router)
+app.include_router(automation_router)
 
 
 @app.get("/health")
@@ -61,19 +61,8 @@ async def health_check():
 
 @app.get("/")
 async def root(request: Request):
-    """Serve HTML frontend or handle Dropbox challenge if present."""
-    challenge = request.query_params.get("challenge")
-    if challenge:
-        from fastapi.responses import PlainTextResponse
-        return PlainTextResponse(challenge)
+    """Serve a simple HTML frontend for creating QR codes and testing redirects."""
     return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.post("/")
-async def root_webhook(request: Request, background_tasks: BackgroundTasks):
-    """Support Dropbox webhook notifications on the root URL."""
-    from .routes_webhooks import handle_dropbox_notification
-    return await handle_dropbox_notification(request, background_tasks)
 
 
 @app.get("/admin")

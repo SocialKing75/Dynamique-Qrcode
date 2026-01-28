@@ -48,11 +48,51 @@ class DropboxClient:
         if cursor:
             return self.dbx.files_list_folder_continue(cursor)
         else:
-            folder_path = os.getenv("DROPBOX_FOLDER_PATH", "/Dossier test qrcode")
-            # Dropbox paths should be empty string for root, otherwise start with /
-            if folder_path in ["", "/", "."]:
-                folder_path = ""
-            elif folder_path and not folder_path.startswith("/"):
-                folder_path = "/" + folder_path
+            # Nouveau défaut sans espaces
+            folder_path = os.getenv("DROPBOX_FOLDER_PATH", "/Dossier-test-qrcode")
+            if folder_path in ["", "/", "."]: folder_path = ""
+            elif folder_path and not folder_path.startswith("/"): folder_path = "/" + folder_path
+
+            import logging
+            logger = logging.getLogger(__name__)
             
-            return self.dbx.files_list_folder(folder_path, recursive=True)
+            try:
+                return self.dbx.files_list_folder(folder_path, recursive=True)
+            except Exception as e:
+                if "not_found" in str(e).lower() and folder_path != "":
+                    return self.dbx.files_list_folder("", recursive=True)
+                raise e
+
+    def find_file_globally(self, filename: str):
+        """
+        Robustly find a file by name, handling pagination and searching root if needed.
+        """
+        if not self.dbx:
+            raise Exception("Dropbox client not configured")
+        
+        # 1. Try search API first (faster)
+        try:
+            res = self.dbx.files_search_v2(filename)
+            for match in res.matches:
+                metadata = match.metadata.get_metadata()
+                if isinstance(metadata, dropbox.files.FileMetadata) and metadata.name.lower() == filename.lower():
+                    return metadata
+        except Exception:
+            pass # Fallback to manual list
+
+        # 2. Manual list with pagination
+        paths_to_try = [os.getenv("DROPBOX_FOLDER_PATH", "/Dossier-test-qrcode"), ""]
+        for p in paths_to_try:
+            if p in ["/", "."]: p = ""
+            try:
+                res = self.dbx.files_list_folder(p, recursive=True)
+                while True:
+                    for entry in res.entries:
+                        if isinstance(entry, dropbox.files.FileMetadata) and entry.name.lower() == filename.lower():
+                            return entry
+                    if not res.has_more:
+                        break
+                    res = self.dbx.files_list_folder_continue(res.cursor)
+            except Exception:
+                continue
+        return None
