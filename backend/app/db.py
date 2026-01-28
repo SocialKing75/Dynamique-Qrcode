@@ -41,11 +41,11 @@ async def init_db():
     _db = _client[DB_NAME]
 
     # Import models here to avoid circular imports
-    from .models import User, QRCode, Click
+    from .models import User, QRCode, Click, ProcessedFile
 
     await init_beanie(
         database=_db,
-        document_models=[User, QRCode, Click]
+        document_models=[User, QRCode, Click, ProcessedFile]
     )
     _initialized = True
 

@@ -42,3 +42,17 @@ class Click(Document):
             "qrcode_id",
             "timestamp",
         ]
+
+
+class ProcessedFile(Document):
+    """Track files that have been processed to avoid duplicates."""
+    dropbox_path: Indexed(str, unique=True)  # Full Dropbox path
+    filename: str
+    content_hash: Optional[str] = None  # Dropbox content hash for detecting changes
+    qrcode_id: Optional[PydanticObjectId] = None  # Link to the created QR code
+    processed_at: datetime = Field(default_factory=datetime.utcnow)
+    status: str = "success"  # success, error
+    error_message: Optional[str] = None
+
+    class Settings:
+        name = "processed_files"
