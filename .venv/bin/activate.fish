@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/name/Dropbox/Parasitis/webgestion/2qrgen/.venv
+set -gx VIRTUAL_ENV '/home/name/Musique/A- QRCODE DYNAMIQUE/.venv'
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

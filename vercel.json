@@ -6,6 +6,14 @@
   },
   "rewrites": [
     {
+      "source": "/favicon.ico",
+      "destination": "/static/favicon.ico"
+    },
+    {
+      "source": "/static/(.*)",
+      "destination": "/static/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/api/index.py"
     }

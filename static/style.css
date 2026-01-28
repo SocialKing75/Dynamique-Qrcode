@@ -1,0 +1,25 @@
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+:root{--bg:#fbfcfe;--card:#fff;--accent:#2746c8;--muted:#6b7280;--text:#0f172a}
+*{box-sizing:border-box}
+html,body,#app{height:100%}
+body{font-family:Inter,ui-sans-serif,system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--text); margin:0; padding:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.container{max-width:760px;margin:36px auto}
+h1{margin:0 0 8px}
+.lead{color:var(--muted); margin:0 0 18px}
+.card{background:var(--card); padding:18px; border-radius:10px; box-shadow:0 6px 18px rgba(15,23,42,0.06); margin-bottom:16px}
+label{display:block;margin-bottom:10px}
+input[type=text],input[type=url]{width:100%; padding:10px;border:1px solid #e6eef6;border-radius:6px}
+.row{display:flex; align-items:center; gap:8px}
+.actions{margin-top:12px}
+.btn{display:inline-block;background:var(--accent); color:#fff; padding:8px 14px; border-radius:8px; text-decoration:none}
+.btn-primary{background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;border:none;font-weight:600}
+.btn-ghost{background:transparent;border:1px solid #eef2f8;color:var(--accent);padding:8px 10px;border-radius:8px}
+.hidden{display:none}
+footer{margin-top:18px;color:var(--muted)}
+img{max-width:100%;height:auto}
+
+/* Icon alignment fixes: center icons in stat cards, action buttons, nav and previews */
+.stat-icon,.btn-icon,.qr-preview,.nav-icon{display:flex;align-items:center;justify-content:center}
+.stat-icon i,.btn-icon i,.qr-preview i,.nav-icon{display:inline-block;line-height:1;font-size:18px}
+.stat-icon svg,.btn-icon svg,.qr-preview svg,.nav-icon svg{display:block;width:18px;height:18px}
+.qr-preview img{width:32px;height:32px;object-fit:cover;border-radius:6px;display:block}

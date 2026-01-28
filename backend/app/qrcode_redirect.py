@@ -11,8 +11,12 @@ async def redirect_slug(slug: str, request: Request):
     if not q:
         return RedirectResponse(url="/", status_code=302)
     # record click
-    ip = request.client.host if request.client else None
+    import hashlib
+    ip_raw = request.client.host if request.client else "unknown"
+    # GDPR: Anonymize IP by hashing
+    ip_hash = hashlib.sha256(ip_raw.encode()).hexdigest()[:16] # Keep first 16 chars for brevity but anonymity
+    
     ua = request.headers.get("user-agent")
-    click = models.Click(qrcode_id=q.id, ip=ip, user_agent=ua)
+    click = models.Click(qrcode_id=q.id, ip=ip_hash, user_agent=ua)
     await click.insert()
     return RedirectResponse(url=q.content)

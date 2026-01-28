@@ -6,6 +6,9 @@ from fastapi import HTTPException
 from passlib.context import CryptContext
 
 SECRET_KEY = os.getenv("SECRET_KEY", "replace-this")
+if SECRET_KEY == "replace-this":
+    print("WARNING: You are using the default SECRET_KEY. This is insecure for production.")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
 REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", 1440))

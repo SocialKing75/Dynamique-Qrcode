@@ -32,7 +32,7 @@ class QRCode(Document):
 class Click(Document):
     qrcode_id: PydanticObjectId
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    ip: Optional[str] = None
+    ip: Optional[str] = None  # Stored as anonymized hash (GDPR compliance)
     user_agent: Optional[str] = None
     country: Optional[str] = None
 
